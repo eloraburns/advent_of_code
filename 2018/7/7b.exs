@@ -45,6 +45,11 @@ defmodule Seven do
     |> Enum.sort
   end
 
+  def except(l1, l2) do
+    steps = l2 |> Enum.map(&(&1.step)) |> MapSet.new
+    Enum.reject(l1, &(&1 in steps))
+  end
+
   def tick(%Seven{} = state) do
     {done_workers, working_workers} = state.workers
     |> Enum.map(&Worker.tick/1)
@@ -56,7 +61,7 @@ defmodule Seven do
     worker_headroom = state.num_workers - length(working_workers)
     new_workers = case worker_headroom do
       0 -> []
-      n -> g2 |> find_empty_incoming() |> Enum.take(n) |> Enum.map(&Worker.new(&1, state.step_time_offset))
+      n -> g2 |> find_empty_incoming() |> except(working_workers) |> Enum.take(n) |> Enum.map(&Worker.new(&1, state.step_time_offset))
     end ++ working_workers
 
     %Seven{ state | workers: new_workers, graph: g2 }
@@ -66,7 +71,7 @@ defmodule Seven do
     g = load_graph(input_filename)
 
     Enum.reduce_while(
-      0..100000,
+      -1..100000,
       %Seven{num_workers: num_workers, step_time_offset: step_time_offset, graph: g},
       fn
         t, %Seven{workers: workers, graph: g} when length(workers) == 0 and map_size(g) == 0 ->
@@ -79,3 +84,4 @@ defmodule Seven do
 end
 
 # 1696 is too high
+# 906 actually. Can't be re-enqueuing existing things!
