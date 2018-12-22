@@ -53,22 +53,23 @@ int main(int argc, char **argv) {
         {OP_addr, 2, 4, 4},
         {OP_seti, 1, 4, 4},
         {OP_mulr, 4, 4, 4},
-        {OP_addi, 5, 2, 5},
+
+        {OP_addi, 5, 2, 5}, // 17
         {OP_mulr, 5, 5, 5},
-        {OP_mulr, 4, 5, 5},
+        {OP_muli, 5, 19, 5}, // hack
         {OP_muli, 5, 11, 5},
         {OP_addi, 2, 5, 2},
-        {OP_mulr, 2, 4, 2},
+        {OP_muli, 2, 22, 2}, // 22
         {OP_addi, 2, 18, 2},
         {OP_addr, 5, 2, 5},
         {OP_addr, 4, 0, 4},
         {OP_seti, 0, 6, 4},
-        {OP_setr, 4, 8, 2},
-        {OP_mulr, 2, 4, 2},
-        {OP_addr, 4, 2, 2},
-        {OP_mulr, 4, 2, 2},
+        {OP_seti, 27, 8, 2}, // 27
+        {OP_muli, 2, 28, 2}, // 28
+        {OP_addi, 2, 29, 2}, // 29
+        {OP_muli, 2, 30, 2}, // 30
         {OP_muli, 2, 14, 2},
-        {OP_mulr, 2, 4, 2},
+        {OP_muli, 2, 32, 2}, // 32
         {OP_addr, 5, 2, 5},
         {OP_seti, 0, 1, 0},
         {OP_seti, 0, 5, 4}
