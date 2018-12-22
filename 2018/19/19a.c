@@ -29,7 +29,7 @@ typedef struct {
 } instruction;
 
 void print_state(int ip, int regs[]) {
-    printf("IP=%d, r0=%d, r1=%d, r2=%d, r3=%d, r4=%d, r5=%d\n", ip, regs[0], regs[1], regs[2], regs[3], regs[4], regs[5]);
+    printf("IP=%d\tr0=%d\tr1=%d\tr2=%d\tr3=%d\tr4=%d\tr5=%d\n", ip, regs[0], regs[1], regs[2], regs[3], regs[4], regs[5]);
 }
 
 int main(int argc, char **argv) {
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     const int program_length = sizeof(program)/ sizeof(*program);
     instruction *current_instruction;
     int cycles = 0;
-    //print_state(ip, regs);
+    print_state(ip, regs);
 
     while (ip < program_length) {
         cycles++;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         ip = regs[IP_REG];
         ip++;
         regs[IP_REG] = ip;
-        //print_state(ip, regs);
+        print_state(ip, regs);
     }
     printf("After %d cycles, reg0=%d\n", cycles, regs[0]);
 
