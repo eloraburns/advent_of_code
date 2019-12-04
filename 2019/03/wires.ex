@@ -9,34 +9,34 @@ defmodule Wires do
     end)
   end
 
-  def wire_to_seen_spaces(wire) do
+  def wire_to_path(wire) do
     wire
-    |> Enum.reduce({MapSet.new, {0, 0}}, fn {dir, len}, {seen, {cx, cy}} ->
+    |> Enum.flat_map_reduce({0, 0}, fn {dir, len}, {cx, cy} ->
       case dir do
         ?U -> {
-          MapSet.union(seen, MapSet.new(Enum.map(cy..(cy+len), &({cx, &1})))),
+          Enum.map(cy..(cy+len), &({cx, &1})),
           {cx, cy+len}
         }
         ?D -> {
-          MapSet.union(seen, MapSet.new(Enum.map(cy..(cy-len), &({cx, &1})))),
+          Enum.map(cy..(cy-len), &({cx, &1})),
           {cx, cy-len}
         }
         ?L -> {
-          MapSet.union(seen, MapSet.new(Enum.map((cx-len)..cx, &({&1, cy})))),
+          Enum.map(cx..(cx-len), &({&1, cy})),
           {cx-len, cy}
         }
         ?R -> {
-          MapSet.union(seen, MapSet.new(Enum.map((cx+len)..cx, &({&1, cy})))),
+          Enum.map(cx..(cx+len), &({&1, cy})),
           {cx+len, cy}
         }
       end
     end)
     |> elem(0)
-    |> MapSet.delete({0,0})
+    |> tl
   end
 
   def solve_1a(filename \\ "input.txt") do
-    [w1, w2] = load!(filename) |> Enum.map(&wire_to_seen_spaces/1)
+    [w1, w2] = load!(filename) |> Enum.map(&wire_to_path/1) |> Enum.map(&MapSet.new/1)
     MapSet.intersection(w1, w2)
     |> Enum.map(fn {x, y} -> abs(x) + abs(y) end)
     |> Enum.min
