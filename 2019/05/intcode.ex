@@ -89,6 +89,50 @@ defmodule Intcode do
         }
         |> run
 
+      5 ->
+        %__MODULE__{
+          intcode | 
+          ip: if arg_value(intcode, opcode, 1) != 0 do
+              arg_value(intcode, opcode, 2)
+            else
+              intcode.ip + 3
+            end
+        }
+        |> run
+
+      6 ->
+        %__MODULE__{
+          intcode | 
+          ip: if arg_value(intcode, opcode, 1) == 0 do
+              arg_value(intcode, opcode, 2)
+            else
+              intcode.ip + 3
+            end
+        }
+        |> run
+
+      7 ->
+        %__MODULE__{
+          program: :array.set(
+            :array.get(intcode.ip + 3, intcode.program),
+            if arg_value(intcode, opcode, 1) < arg_value(intcode, opcode, 2) do 1 else 0 end,
+            intcode.program
+          ),
+          ip: intcode.ip + 4
+        }
+        |> run
+
+      8 ->
+        %__MODULE__{
+          program: :array.set(
+            :array.get(intcode.ip + 3, intcode.program),
+            if arg_value(intcode, opcode, 1) == arg_value(intcode, opcode, 2) do 1 else 0 end,
+            intcode.program
+          ),
+          ip: intcode.ip + 4
+        }
+        |> run
+
       99 ->
         intcode
 
@@ -99,5 +143,10 @@ defmodule Intcode do
     load!(filename)
     |> run
     #5044655
+  end
+
+  def answer_1b(filename \\ "input.txt") do
+    load!(filename)
+    |> run
   end
 end
