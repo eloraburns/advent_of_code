@@ -1,5 +1,5 @@
 defmodule Intcode do
-  defstruct [:name, :program, :ip, :relative_base, :last_output, :wired_to, :report_to]
+  defstruct [:name, :program, :ip, :relative_base]
 
   def load!(filename) do
     %__MODULE__{
@@ -57,9 +57,9 @@ defmodule Intcode do
     :array.get(arg_address(intcode, opcode, arg_number), intcode.program)
   end
 
-  def run(intcode, step \\ false, halt \\ false)
-  def run(intcode, _, true), do: intcode
-  def run(intcode, step, _) do
+  def run(intcode, input \\ nil, step \\ false, halt \\ false)
+  def run(intcode, _, _, true), do: intcode
+  def run(intcode, input, step, _) do
     opcode = :array.get(intcode.ip, intcode.program)
     case rem(opcode, 100) do
 
@@ -73,7 +73,7 @@ defmodule Intcode do
           ),
           ip: intcode.ip + 4,
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       2 ->
         %__MODULE__{
@@ -85,34 +85,32 @@ defmodule Intcode do
           ),
           ip: intcode.ip + 4,
         }
-        |> run(false, step)
+        |> run(input, false, step)
+
+      3 when is_nil(input) ->
+        {:need_input, intcode}
 
       3 ->
         %__MODULE__{
           intcode |
           program: :array.set(
             arg_address(intcode, opcode, 1),
-            receive do
-              {:input, x} -> x
-            end,
+            input,
             intcode.program
           ),
           ip: intcode.ip + 2
         }
-        |> run(false, step)
+        |> run(nil, false, step)
 
       4 ->
-        try do
-          send intcode.wired_to, {:input, arg_value(intcode, opcode, 1)}
-        rescue
-          ArgumentError -> nil
-        end
-        %__MODULE__{
-          intcode | 
-          last_output: arg_value(intcode, opcode, 1),
-          ip: intcode.ip + 2
+        {
+          :made_output,
+          arg_value(intcode, opcode, 1), 
+          %__MODULE__{
+            intcode | 
+            ip: intcode.ip + 2
+          }
         }
-        |> run(false, step)
 
       5 ->
         %__MODULE__{
@@ -123,7 +121,7 @@ defmodule Intcode do
               intcode.ip + 3
             end
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       6 ->
         %__MODULE__{
@@ -134,7 +132,7 @@ defmodule Intcode do
               intcode.ip + 3
             end
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       7 ->
         %__MODULE__{
@@ -146,7 +144,7 @@ defmodule Intcode do
           ),
           ip: intcode.ip + 4
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       8 ->
         %__MODULE__{
@@ -158,7 +156,7 @@ defmodule Intcode do
           ),
           ip: intcode.ip + 4
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       9 ->
         %__MODULE__{
@@ -166,21 +164,11 @@ defmodule Intcode do
           ip: intcode.ip + 2,
           relative_base: intcode.relative_base + arg_value(intcode, opcode, 1),
         }
-        |> run(false, step)
+        |> run(input, false, step)
 
       99 ->
-        if intcode.report_to do
-          send intcode.report_to, {:result, intcode.last_output}
-        end
+        {:halted, intcode}
     end
-  end
-
-  def the_bot(filename \\ "input.txt", patches \\ [], stdout \\ nil) do
-    program = Enum.reduce(patches, load!(filename), fn {position, value}, intcode ->
-      %Intcode{ intcode | program: :array.set(position, value, intcode.program) }
-    end)
-    runner_pid = stdout || self()
-    spawn(fn -> run(%__MODULE__{program | name: :bot, wired_to: runner_pid, report_to: runner_pid}) end)
   end
 
   def print_board(board) do
@@ -210,28 +198,37 @@ defmodule Intcode do
     board
   end
 
-  def make_display do
-    spawn fn ->
-      display_fn(%{})
-    end
+  def find_in_board(board, tile) do
+    Enum.reduce(board, nil, fn
+      {{x, y}, ^tile}, nil -> {x, y}
+      _, acc -> acc
+    end)
   end
 
-  defp display_fn(board) do
-    receive do
-      {:input, x} -> receive do
-        {:input, y} -> receive do
-          {:input, z} ->
-            board |> Map.put({x, y}, z)
-        end
-      end
-      {:result, _} -> board
+  def cmp(x, y) when x > y, do: 1
+  def cmp(x, y) when x < y, do: -1
+  def cmp(_, _), do: 0
+
+  def game_runner(intcode, board \\ %{}, input \\ nil) do
+    case run(intcode, input) do
+      {:need_input, next} ->
+        {ballx, _} = find_in_board(board, 4)
+        {paddlex, _} = find_in_board(board, 3)
+        game_runner(next, board, cmp(ballx, paddlex))
+      {:made_output, x, next} ->
+        {:made_output, y, next2} = run(next)
+        {:made_output, z, next3} = run(next2)
+        newboard = board |> Map.put({x, y}, z) |> print_board
+        game_runner(next3, newboard)
+      {:halted, next} -> {next, board}
     end
-    |> print_board
-    |> display_fn
   end
 
   def answer_13b do
-    dpid = make_display()
-    bpid = the_bot("input.txt", [{0, 2}], dpid)
+    load!("input.txt")
+    |> poke(0, 2)
+    |> game_runner
+    |> elem(1)
+    |> Map.get({-1, 0})
   end
 end
