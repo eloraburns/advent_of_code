@@ -38,6 +38,10 @@ defmodule Redox do
   def test4, do: 180697 = solve_1a("test4.txt")
   def test5, do: 2210736 = solve_1a("test5.txt")
 
+  def test3b, do: 82892753 = solve_1b("test3.txt")
+  def test4b, do: 5586022 = solve_1b("test4.txt")
+  def test5b, do: 460664 = solve_1b("test5.txt")
+
   defmodule Supply do
     defstruct leftover: %{}, need: %{"FUEL" => 1}, ore: 0
   end
@@ -76,5 +80,20 @@ defmodule Redox do
     |> Stream.drop_while(fn {s, _r} -> map_size(s.need) > 0 end)
     |> Enum.take(1)
     |> (fn [{%{ore: ore}, _}] -> ore end).()
+  end
+
+  def solve_1b(filename \\ "input.txt", bootstrap_fuel \\ 3_340_000) do
+    reactions = load!(filename)
+    {%Supply{need: %{"FUEL" => bootstrap_fuel}}, reactions, bootstrap_fuel - 1}
+    |> Stream.iterate(fn
+      {%{need: n} = s, r, f} when map_size(n) == 0 ->
+        {step(%Supply{ s | need: %{"FUEL" => 1}}, r), r, f + 1}
+      {s, r, f} -> {step(s, r), r, f}
+    end)
+    |> Stream.drop_while(fn {%{ore: o}, _r, _f} -> o < 1_000_000_000_000 end)
+    |> Enum.take(1)
+    |> (fn [{_, _, f}] -> f end).()
+    # 143478 is too low
+    # 3343477
   end
 end
