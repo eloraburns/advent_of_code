@@ -34,35 +34,25 @@ defmodule Drone do
     |> IO.puts
   end
 
-  # The idea was to find the corner while walking the edges of the beam
-  # But now I think I'll just walk _one_ edge of the beam and wait for it to fit a vector of the stated size!
-  def trace_beam(start_x, start_y, row_east, col_south, side_size \\ 10) do
-    IO.inspect {start_x, start_y, row_east, col_south}
-    new_row_east = Stream.iterate({row_east, start_y, 1}, fn {x, y, _} -> {x + 1, y, deploy(x + 1, y)} end)
-    |> Stream.drop_while(fn {_, _, t} -> t == 1 end)
-    |> Enum.take(1)
-    |> hd
-    |> elem(0)
-    |> Kernel.-(1)
-
-    new_col_south = Stream.iterate({start_x, col_south, 1}, fn {x, y, _} -> {x, y + 1, deploy(x, y + 1)} end)
+  def trace_beam(start_x, start_y, side_size \\ 10) do
+    new_y = Stream.iterate({start_x, start_y, 1}, fn {x, y, _} -> {x, y + 1, deploy(x, y + 1)} end)
     |> Stream.drop_while(fn {_, _, t} -> t == 1 end)
     |> Enum.take(1)
     |> hd
     |> elem(1)
     |> Kernel.-(1)
 
-    case {row_east - start_x + 1, col_south - start_y + 1} do
-      {^side_size, ^side_size} -> {start_x, start_y}
-      {dx, dy} when dx < dy -> trace_beam(start_x, start_y + 1, new_row_east, new_col_south, side_size)
-      {dx, dy} when dx > dy -> trace_beam(start_x + 1, start_y, new_row_east, new_col_south, side_size)
-      _ -> trace_beam(start_x + 1, start_y + 1, new_row_east, new_col_south, side_size)
+    case deploy(start_x + (side_size - 1), new_y - (side_size - 1)) do
+      1 -> {start_x, new_y - (side_size - 1)}
+      0 -> trace_beam(start_x + 1, new_y, side_size)
     end
   end
 
   def solve_1b do
-    {x, y} = trace_beam(20, 12, 20, 12, 100)
+    {x, y} = trace_beam(20, 12, 100)
     x * 10000 + y
     # 13590767 is too high
+    # 13530763 is too low
+    # 13530764 (silly off by one)
   end
 end
