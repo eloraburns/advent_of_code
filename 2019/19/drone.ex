@@ -34,6 +34,8 @@ defmodule Drone do
     |> IO.puts
   end
 
+  # The idea was to find the corner while walking the edges of the beam
+  # But now I think I'll just walk _one_ edge of the beam and wait for it to fit a vector of the stated size!
   def trace_beam(start_x, start_y, row_east, col_south, side_size \\ 10) do
     IO.inspect {start_x, start_y, row_east, col_south}
     new_row_east = Stream.iterate({row_east, start_y, 1}, fn {x, y, _} -> {x + 1, y, deploy(x + 1, y)} end)
