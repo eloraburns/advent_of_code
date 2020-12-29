@@ -2,9 +2,41 @@ defmodule Tiles do
   defmodule Tile do
     defstruct [
       id: nil,
+      image_data: [],
       sides: [],
       neighbours: []
     ]
+  end
+
+  defimpl String.Chars, for: Tile do
+    def to_string(%Tile{id: id, neighbours: neighbours, image_data: image_data, sides: [side0, side1, side2, side3]}) do
+      middle = Enum.zip([
+        side3 |> String.slice(1, 8) |> String.to_charlist |> Enum.reverse,
+        '        ',
+        image_data,
+        '        ',
+        side1 |> String.slice(1, 8) |> String.to_charlist,
+        '\n\n\n\n\n\n\n\n'
+      ]) |> Enum.map(&Tuple.to_list/1)
+
+      [
+        "id:#{id} neighbours:#{inspect neighbours}\n\n",
+        String.slice(side0, 0, 1),
+        ?\s,
+        String.slice(side0, 1, 8),
+        ?\s,
+        String.slice(side0, 9, 1),
+        ?\n,
+        ?\n,
+        middle,
+        ?\n,
+        String.slice(side2, 9, 1),
+        ?\s,
+        String.slice(side2, 1, 8) |> String.reverse,
+        ?\s,
+        String.slice(side2, 0, 1)
+      ] |> IO.iodata_to_binary
+    end
   end
 
   def read(filename) do
@@ -20,15 +52,20 @@ defmodule Tiles do
       |> String.trim
       |> String.split("\n")
 
-      data = scanlines |> Enum.join("") |> String.to_charlist
-      side1 = data |> Enum.take(10)
-      side2 = data |> Enum.drop(9) |> Enum.take_every(10)
-      side3 = data |> Enum.drop(90) |> Enum.reverse
-      side4 = data |> Enum.take_every(10) |> Enum.reverse
+      raw_data = scanlines |> Enum.join("") |> String.to_charlist
+      side1 = raw_data |> Enum.take(10)
+      side2 = raw_data |> Enum.drop(9) |> Enum.take_every(10)
+      side3 = raw_data |> Enum.drop(90) |> Enum.reverse
+      side4 = raw_data |> Enum.take_every(10) |> Enum.reverse
+
+      image_data = scanlines
+      |> Enum.drop(1)
+      |> Enum.take(8)
+      |> Enum.map(&String.slice(&1, 1, 8))
 
       %Tile{
         id: String.to_integer(id),
-        image_data: data,
+        image_data: image_data,
         sides: [
           side1 |> IO.iodata_to_binary,
           side2 |> IO.iodata_to_binary,
@@ -98,45 +135,47 @@ defmodule Tiles do
   def match_side(%Tile{sides: [side0, side1, side2, side3]}, tile2) do
     tile2_sides = tile2.sides ++ Enum.map(tile2.sides, &String.reverse/1)
     cond do
-      sides0 in tile2.sides -> 0
-      sides1 in tile2.sides -> 1
-      sides2 in tile2.sides -> 2
-      sides3 in tile2.sides -> 3
+      side0 in tile2_sides -> 0
+      side1 in tile2_sides -> 1
+      side2 in tile2_sides -> 2
+      side3 in tile2_sides -> 3
       true -> false
     end
   end
 
-  def rotate_tile(tile, 0), do: tile
-  def rotate_tile(tile, number_of_90_degree_rotations) do
-    new_sides = tile.sides
-    |> Enum.map(&String.to_charlist/)
+  def rotate_data(d) do
+    d
+    |> Enum.map(&String.to_charlist/1)
     |> Enum.zip
-    |> Enum.map(fn new_row ->
-      new_row
-      |> Tuple.to_list
-      |> IO.iodata_to_binary
-    end)
+    |> Enum.map(&Tuple.to_list/1)
+    |> Enum.map(&Enum.reverse/1)
+    |> Enum.map(&IO.iodata_to_binary/1)
+  end
 
-    %Tile{ tile | sides: new_sides }
+  def rotate_tile(tile, 0), do: tile
+  def rotate_tile(%Tile{sides: [s0, s1, s2, s3]} = tile, number_of_90_degree_rotations) do
+    %Tile{ tile | sides: [s3, s0, s1, s2], image_data: rotate_data(tile.image_data) }
     |> rotate_tile(number_of_90_degree_rotations - 1)
   end
 
-  def orient_top_to(%Tile{sides: [side0, side1, side2, side3]} = tile, top) do
-    fliptop = String.reverse(top)
+  def orient_top_to(%Tile{sides: [side0, side1, side2, side3]} = tile, fliptop) do
+    # Because the "top" we're aligning to is the bottom of the tile above,
+    # when we're passed the "bottom side" it's read backwards (clockwise).
+    top = String.reverse(fliptop)
     cond do
-      side0 == top ->     tile
-      side1 == top ->     tile |> rotate_tile(3)
-      side2 == top ->     tile |> rotate_tile(2)
-      side3 == top ->     tile |> rotate_tile(1)
-      side0 == fliptop -> tile |> flip_tile |> rotate_tile(2)
-      side1 == fliptop -> tile |> flip_tile |> rotate_tile(3)
-      side2 == fliptop -> tile |> flip_tile
-      side3 == fliptop -> tile |> flip_tile |> rotate_tile(1)
+      side0 == top ->     IO.puts("rotate(0)"); tile
+      side1 == top ->     IO.puts("rotate(3)"); tile |> rotate_tile(3)
+      side2 == top ->     IO.puts("rotate(2)"); tile |> rotate_tile(2)
+      side3 == top ->     IO.puts("rotate(1)"); tile |> rotate_tile(1)
+      side0 == fliptop -> IO.puts("flip;rotate(2)"); tile |> flip_tile |> rotate_tile(2)
+      side1 == fliptop -> IO.puts("flip;rotate(3)"); tile |> flip_tile |> rotate_tile(3)
+      side2 == fliptop -> IO.puts("flip;rotate(0)"); tile |> flip_tile
+      side3 == fliptop -> IO.puts("flip;rotate(1)"); tile |> flip_tile |> rotate_tile(1)
     end
   end
 
-  def orient_left_to(%Tile{sides: [side0, side1, side2, side3]} = tile, left) do
-    flipleft = String.reverse(left)
+  def orient_left_to(%Tile{sides: [side0, side1, side2, side3]} = tile, flipleft) do
+    left = String.reverse(flipleft)
     cond do
       side0 == left ->     tile |> rotate_tile(3)
       side1 == left ->     tile |> rotate_tile(2)
@@ -151,7 +190,11 @@ defmodule Tiles do
 
   # Flips vertically
   def flip_tile(tile) do
-    %Tile{ tile | sides: Enum.reverse(tile.sides) }
+    [s0, s1, s2, s3] = Enum.map(tile.sides, &String.reverse/1)
+    %Tile{ tile |
+      sides: [s2, s3, s0, s1],
+      image_data: Enum.reverse(tile.image_data)
+    }
   end
 
   #      0
@@ -177,26 +220,97 @@ defmodule Tiles do
 
     rotated_corner = rotate_tile(corner, rotations_required)
 
-    {remaining_tiles, image} = stitch(not_corner, 0, 0, %{{0, 0} => rotated_corner})
-    stitch(
+    stitch(not_corner, 0, 0, %{{0, 0} => rotated_corner})
   end
 
   def stitch([], 11, 11, image), do: image
-  def stitch(tiles, 11, 0, image), do: {tiles, image}
   def stitch(tiles, 11, placed_y, image) do
     # place next at {0, placed_y + 1}
+    %Tile{sides: [_side0, _side1, side2, _side3]} = Map.get({0, placed_y + 1}, image)
+    flipped_side2 = String.reverse(side2)
+    %{true => [next_tile], false => rest_of_tiles} = Enum.group_by(tiles, fn t ->
+      side2 in t.sides or flipped_side2 in t.sides
+    end)
+
+    ready_to_place_tile = orient_top_to(next_tile, side2)
+
+    stitch(rest_of_tiles, 0, placed_y + 1, Map.put(image, {0, placed_y + 1}, ready_to_place_tile))
   end
   def stitch(tiles, placed_x, placed_y, image) do
-    # going right
+    # going right, so get the right side of the lefterly (aka most recently placed) tile
     %Tile{sides: [_side0, side1, _side2, _side3]} = Map.get({placed_x, placed_y}, image)
     flipped_side1 = String.reverse(side1)
-    next_tile = tiles
-    |> Enum.find(tiles, fn t -> side1 in t.sides or side2 in t.sides end)
+    %{true => [next_tile], false => rest_of_tiles} = Enum.group_by(tiles, fn t ->
+      side1 in t.sides or flipped_side1 in t.sides
+    end)
 
+    ready_to_place_tile = orient_left_to(next_tile, side1)
 
+    stitch(rest_of_tiles, placed_x + 1, placed_y, Map.put(image, {placed_x + 1, placed_y}, ready_to_place_tile))
   end
 
-end
+  def test do
+    raw_tile = """
+    Tile 0123:
+    ...#.#....
+    .........#
+    #.........
+    #....##.##
+    .#...##...
+    ..#.#..#.#
+    .....#...#
+    #...#..#.#
+    ##....#...
+    #.####....
+    """
+    [tile] = parse(raw_tile)
 
-#     id: 1321,
-#    sides: ['.....#.##.', '.#.#.#.#.#', '#####.###.', '...###.#..']
+    expected_stringified_tile = """
+    id:123 neighbours:[]
+    . ..#.#... .
+
+    . ........ #
+    # ........ .
+    # ....##.# #
+    . #...##.. .
+    . .#.#..#. #
+    . ....#... #
+    # ...#..#. #
+    # #....#.. .
+
+    # .####... .
+    """
+
+    [expected_flipped_tile] = parse("""
+    Tile 0123:
+    #.####....
+    ##....#...
+    #...#..#.#
+    .....#...#
+    ..#.#..#.#
+    .#...##...
+    #....##.##
+    #.........
+    .........#
+    ...#.#....
+    """)
+
+    stringified_tile = to_string(tile)
+    actual_flipped_tile = flip_tile(tile)
+ 
+    cond do
+      stringified_tile != expected_stringified_tile ->
+        IO.puts "NOT STRINGIFIED"
+        IO.puts "Raw #{raw_tile}"
+        IO.puts "Expected #{expected_stringified_tile}"
+        IO.puts "Actual #{stringified_tile}"
+      actual_flipped_tile != expected_flipped_tile ->
+        IO.puts "NOT FLIPPED"
+        IO.puts "Tile #{tile}"
+        IO.puts "Expected #{expected_flipped_tile}"
+        IO.puts "Actual #{actual_flipped_tile}"
+      true -> :passed
+    end
+
+  end
+end
