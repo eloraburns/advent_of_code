@@ -230,4 +230,88 @@ defmodule Tiles do
     IO.puts "#{placed_x + 1},#{placed_y}\n#{ready_to_place_tile}"
     stitch(rest_of_tiles, placed_x + 1, placed_y, Map.put(image, {placed_x + 1, placed_y}, ready_to_place_tile))
   end
+
+  def render(image, width, height) do
+    for y <- 0..(height - 1) do
+      for x <- 0..(width - 1) do
+        Map.get(image, {x, y})
+      end
+      |> Enum.map(&(&1.image_data))
+      |> Enum.zip
+      |> Enum.map(&Tuple.to_list/1)
+      |> Enum.map(&Enum.join(&1, ""))
+    end
+    |> Enum.concat
+  end
+
+  @nessie_width 20
+  @nessie_hash_count 15
+  def nessie?([
+    <<  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _,  _, ?#,  _ >>, 
+    << ?#,  _,  _,  _,  _, ?#, ?#,  _,  _,  _,  _, ?#, ?#,  _,  _,  _,  _, ?#, ?#, ?# >>, 
+    <<  _, ?#,  _,  _, ?#,  _,  _, ?#,  _,  _, ?#,  _,  _, ?#,  _,  _, ?#,  _,  _,  _ >>
+  ]), do: true
+  def nessie?([_, _, _]), do: false
+
+  def iterate(start, _, 0), do: start
+  def iterate(start, fun, iters), do: iterate(fun.(start), fun, iters - 1)
+
+  def num_nessies?(raster) do
+    char_width = raster |> hd |> byte_size
+    for num_flips <- 0..1,
+        num_rotations <- 0..3 \
+    do
+      raster
+      |> iterate(&flip_raster/1, num_flips)
+      |> iterate(&rotate_raster/1, num_rotations)
+      |> Enum.chunk_every(3, 1, :discard)
+      |> Enum.map(fn rows ->
+        0..(char_width - @nessie_width)
+        |> Enum.map(fn offset ->
+          rows
+          |> Enum.map(&binary_part(&1, offset, @nessie_width))
+        end)
+        |> Enum.count(&nessie?/1)
+      end)
+      |> Enum.sum
+    end
+    |> Enum.max
+  end
+
+  def rotate_raster(raster) do
+    raster
+    |> Enum.map(&String.to_charlist/1)
+    |> Enum.zip
+    |> Enum.map(&Tuple.to_list/1)
+    |> Enum.map(&Enum.reverse/1)
+    |> Enum.map(&IO.iodata_to_binary/1)
+  end
+
+  def flip_raster(raster), do: Enum.reverse(raster)
+
+  def solveb(filename, width, height) do
+    raster = filename
+    |> read
+    |> parse
+    |> detect_neighbours
+    |> stitch
+    |> render(width, height)
+
+    nessie_hashes = num_nessies?(raster) * @nessie_hash_count
+
+    num_hashes = raster
+    |> Enum.flat_map(&String.to_charlist/1)
+    |> Enum.count(&(&1 == ?#))
+
+    num_hashes - nessie_hashes
+  end
+
+  def test20b do
+    :nope
+  end
+
+  def solve20b do
+    solveb("input.txt", 12, 12)
+    # 2256
+  end
 end
