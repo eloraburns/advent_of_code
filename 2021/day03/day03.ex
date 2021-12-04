@@ -75,6 +75,7 @@ defmodule Day03 do
     end)
     oxy = winnow(ll, 0, {"0", "1", "1"}) |> Enum.join("") |> Integer.parse(2) |> elem(0)
     co2 = winnow(ll, 0, {"1", "0", "0"}) |> Enum.join("") |> Integer.parse(2) |> elem(0)
+    IO.inspect {oxy, co2}, label: "oxy co2"
     oxy * co2
   end
 
@@ -90,9 +91,9 @@ defmodule Day03 do
       raise "lines are only #{Enum.count(hd(lines))} but we're at #{at}"
     end
     case most_common_at(lines, at) do
-      "0" -> IO.inspect(filter_at(lines, at, z), label: "0 most common")
-      "1" -> IO.inspect(filter_at(lines, at, o), label: "1 most common")
-      :equal -> IO.inspect(filter_at(lines, at, d), label: "equal")
+      "0" -> IO.puts("0 most common"); filter_at(lines, at, z)
+      "1" -> IO.puts("1 most common"); filter_at(lines, at, o)
+      :equal -> IO.puts("equal"); filter_at(lines, at, d)
     end
     |> winnow(at + 1, {z, o, d})
   end
