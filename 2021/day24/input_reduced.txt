@@ -1,0 +1,45 @@
+inp w     inp w     inp w     inp w     inp w     inp w     inp w     inp w     inp w      inp w     inp w     inp w     inp w     inp w
+mul x 0   mul x 0   mul x 0   mul x 0   mul x 0   mul x 0   mul x 0   mul x 0   mul x 0    mul x 0   mul x 0   mul x 0   mul x 0   mul x 0
+add x z   add x z   add x z   add x z   add x z   add x z   add x z   add x z   add x z    add x z   add x z   add x z   add x z   add x z
+mod x 26  mod x 26  mod x 26  mod x 26  mod x 26  mod x 26  mod x 26  mod x 26  mod x 26   mod x 26  mod x 26  mod x 26  mod x 26  mod x 26
+D
+div z 1   div z 1   div z 1   div z 1   div z 1   div z 26  div z 1   div z 26  div z 26   div z 1   div z 26  div z 26  div z 26  div z 26
+N
+add x 10  add x 12  add x 13  add x 13  add x 14  add x -2  add x 11  add x -15 add x -10  add x 10  add x -10 add x -4  add x -1  add x -1
+eql x w   eql x w   eql x w   eql x w   eql x w   eql x w   eql x w   eql x w   eql x w    eql x w   eql x w   eql x w   eql x w   eql x w
+eql x 0   eql x 0   eql x 0   eql x 0   eql x 0   eql x 0   eql x 0   eql x 0   eql x 0    eql x 0   eql x 0   eql x 0   eql x 0   eql x 0
+mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0    mul y 0   mul y 0   mul y 0   mul y 0   mul y 0
+add y 25  add y 25  add y 25  add y 25  add y 25  add y 25  add y 25  add y 25  add y 25   add y 25  add y 25  add y 25  add y 25  add y 25
+mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x    mul y x   mul y x   mul y x   mul y x   mul y x
+add y 1   add y 1   add y 1   add y 1   add y 1   add y 1   add y 1   add y 1   add y 1    add y 1   add y 1   add y 1   add y 1   add y 1
+mul z y   mul z y   mul z y   mul z y   mul z y   mul z y   mul z y   mul z y   mul z y    mul z y   mul z y   mul z y   mul z y   mul z y
+mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0   mul y 0    mul y 0   mul y 0   mul y 0   mul y 0   mul y 0
+add y w   add y w   add y w   add y w   add y w   add y w   add y w   add y w   add y w    add y w   add y w   add y w   add y w   add y w
+M
+add y 0   add y 6   add y 4   add y 2   add y 9   add y 1   add y 10  add y 6   add y 4    add y 6   add y 3   add y 9   add y 15  add y 5
+mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x   mul y x    mul y x   mul y x   mul y x   mul y x   mul y x
+add z y   add z y   add z y   add z y   add z y   add z y   add z y   add z y   add z y    add z y   add z y   add z y   add z y   add z y   
+
+                                            2+9 ->     9
+                                                               10+x -15 = y
+                                                                 x = y+5
+                                 13+x                                                -10 = y
+                                  3+x                                                    = y
+                                                                                               6+x -10 = y
+                                                                                                 x -4  = y
+13 + x - 4 = y
+12 + x - 1 = y
+10 + x - 1 = y
+         
+
+
+w = input
+x = !((z % 26 + N) == w)
+z /= D
+y = 25x + 1
+z *= y (1 or 26; so shift or not)
+y = (w + M)x (0 or w+M; so nothing or w+M)
+z += y
+
+
+

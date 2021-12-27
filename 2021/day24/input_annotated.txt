@@ -1,0 +1,252 @@
+inp w       #                      w = d1
+mul x 0     # x = 0, y = 0, z = 0, w = d1
+add x z
+mod x 26
+div z 1
+add x 10    # x = 10
+eql x w     # x = 0 (1 <= w <= 9)
+eql x 0     # x = 1
+mul y 0
+add y 25    #        y = 25
+mul y x     #        y = 25
+add y 1     #        y = 26
+mul z y
+mul y 0     #        y = 0
+add y w     #        y = d1
+add y 0
+mul y x     #        y = d1
+add z y     #               z = d1
+inp w       #                     w = d2  ########################
+mul x 0     # x = 0
+add x z     # x = d1
+mod x 26    # x = d1 (1 <= d1 <= 9)
+div z 1     #               z = d1
+add x 12    # x = d1+12
+eql x w     # x = 0 (d1 + 12 cannot be within te range of d2)
+eql x 0     # x = 1
+mul y 0     #        y = 0
+add y 25    #        y = 25
+mul y x     #        y = 25
+add y 1     #        y = 26
+mul z y     #               z = 26*d1
+mul y 0     #        y = 0
+add y w     #        y = d2
+add y 6     #        y = d2+6
+mul y x     #        y = d2+6
+add z y     #               z = 26d1 + d2 + 6
+inp w       #                       w = d3
+mul x 0     # x = 0
+add x z     # x = 26d1 + d2 + 6
+mod x 26    # x = d2 + 6
+div z 1     #               z = 26d1 + d2 + 6
+add x 13    # x = d2 + 19
+eql x w     # x = (d2 + 19 == 26d1 + d2 + 6) => 0
+eql x 0     # x = 1
+mul y 0     #        y = 0
+add y 25    #        y = 25
+mul y x     # x = 25
+add y 1     #        y = 26
+mul z y     #               z = 26(26d1 + d2 + 6)
+mul y 0     #        y = 0
+add y w     #        y = d3
+add y 4     #        y = d3+4
+mul y x     #        y = 25(d3+4)
+add z y     #               z = 25(d3+4) + 26(26d1 + d2 + 6)
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 2
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 14
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 9
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -2
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 1
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 11
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 10
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -15
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 4
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 3
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -4
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 9
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -1
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 15
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -1
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 5
+mul y x
+add z y
