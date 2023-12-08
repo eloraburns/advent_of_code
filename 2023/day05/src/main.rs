@@ -17,6 +17,7 @@ struct ParsedMapping {
 #[derive(Eq)]
 #[derive(PartialEq)]
 struct Mapping {
+    from: i64,
     upto: i64,
     delta: i64,
 }
@@ -38,100 +39,43 @@ impl Mappings {
         return n;
     }
 
-    // a, b, 5
-    // c, d, 5
-    //
-    // upto: a, delta: 0
-    // upto: f, delta: 1
-    // upto: M, delta: 0
-    // +
-    // upto: c, delta: 0
-    // upto: h, delta: 1
-    // upto: M, delta: 0
-    // =
-    // upto: a, delta: 0
-    // upto: b, delta: 1
-    // upto: f, delta: 2
-    // upto: g, delta: 1
-    // upto: h, delta: 1
-    // upto: M, delta: 0
-    // a <              
-    // b |   > a       a
-    // c |---| b <      
-    // d |   | c |   > b
-    // e <   | d |---| c
-    // f     > e |   | d
-    // g       g <   | ef
-    // h       h     > g
-    // i       i       i
-
-    // a, b, 1
-    // b, d, 4
-    // g, h, 1
-    // a]-----------+   
-    // b<           +-[a
-    // c|               
-    // d|-------+     >b
-    // e<       +-----|c
-    // f              |d
-    // g]-----+       >e
-    // h      +-------[g
-
-    // Six cases (excluding exact boundary matches):
-    //
-    //   ^     ^     ^                  
-    //   V     |     |                  
-    // ^     ^ |   ^ |   ^     ^     ^  
-    // |     | v   | |   | ^   | ^   |  
-    // |     |     | |   | v   | |   |  
-    // v     v     v |   v     v |   v  
-    //               v           v    ^ 
-    //                                v 
-
-    // WAIT A SEC. Instead of fromrange->torange, it'll be easier
-    // to stack if we represent it as "up to this number, delta is X".
-    // upto: a, delta: 0
-    // upto: f: delta: 1
-    // upto: MAXINT, delta: 0
-    fn new() -> Mappings {
-        Mappings {
-            m: vec![Mapping { upto: i64::MAX, delta: 0 }]
-        }
-    }
-
-    fn xlate(m: &ParsedMapping) -> Mapping {
-        Mapping {
-            upto: m.source + m.length,
-            delta: m.dest - m.source
-        }
-    }
-
-    fn apply_parsed_mappings(maps: &Vec<ParsedMapping>, mapping: &Mappings) -> Mappings {
+    fn parsed_to_mappings(maps: &Vec<ParsedMapping>) -> Mappings {
         let mut smaps = maps.clone();
         smaps.sort();
-        let mut mapi = 0;
-        let mut rangei = 0;
-        let mut out = vec![];
-        loop {
-            if (mapi >= maps.len() || rangei >= mapping.m.len()) {
-                break;
-            }
-            match (&maps[mapi], &mapping.m[rangei]) {
-                (ParsedMapping{source, dest, length}, Mapping{upto, delta})
-                if (source+length < *upto) => {
-                    out.push(Mapping { upto: *source, delta: *delta });
-                    out.push(Mapping { upto: *source+*length, delta: *delta + *dest - *source});
-                    mapi += 1;
-                },
-                _ => break
-            }
-        };
-        while rangei < mapping.m.len() {
-            out.push(mapping.m[rangei].clone());
-            rangei += 1;
-        }
+        let mut dmaps = vec![];
 
-        Mappings { m: out }
+        dmaps.push(Mapping { from: i64::MIN, upto: smaps[0].source, delta: 0 });
+
+        let last_smaps = smaps.len() - 1;
+        for i in 0..smaps.len() {
+            dmaps.push(Mapping {
+                from: smaps[i].source,
+                upto: smaps[i].source + smaps[i].length,
+                delta: smaps[i].dest - smaps[i].source
+            });
+            if i == last_smaps {
+                dmaps.push(Mapping {
+                    from: smaps[i].source + smaps[i].length,
+                    upto: i64::MAX,
+                    delta: 0
+                });
+            } else if smaps[i].source + smaps[i].length < smaps[i+1].source {
+                dmaps.push(Mapping {
+                    from: smaps[i].source + smaps[i].length,
+                    upto: smaps[i+1].source,
+                    delta: 0
+                });
+            }
+        }
+        Mappings { m: dmaps }
+    }
+
+    fn merge_mappings(m1: &Mappings, m2: &Mappings) -> Mappings {
+        let mut newmaps = vec![];
+
+
+
+        Mappings { m: newmaps }
     }
 }
 
@@ -139,44 +83,33 @@ impl Mappings {
 fn try_mapping() {
     let ms = Mappings {
         m: vec![
-            Mapping { upto: 0, delta: 0 },
-            Mapping { upto: 5, delta: 5 },
-            Mapping { upto: 10, delta: -5},
-            Mapping { upto: i64::MAX, delta: 0},
+            Mapping { from: i64::MIN, upto:        0, delta:  0 },
+            Mapping { from:        0, upto:        5, delta:  5 },
+            Mapping { from:        5, upto:       10, delta: -5 },
+            Mapping { from:       10, upto: i64::MAX, delta:  0 },
         ]
     };
+    assert_eq!(-1, ms.map(-1));
     assert_eq!(1, ms.map(6));
     assert_eq!(7, ms.map(2));
     assert_eq!(11, ms.map(11));
 }
 
 #[test]
-fn test_apply_parsed_mappings_simple() {
-    let actual = Mappings::apply_parsed_mappings(
-        &vec![ParsedMapping{ source: 0, dest: 1, length: 1 }],
-        &Mappings::new()
-    );
+fn test_parsed_to_mappings() {
+    let actual = Mappings::parsed_to_mappings(&vec![
+        ParsedMapping{ source: 0, dest: 10, length: 5 },
+        ParsedMapping{ source: 10, dest: 0, length: 5 },
+        ParsedMapping{ source: 16, dest: 17, length: 2}
+    ]);
     assert_eq!(Mappings { m: vec![
-        Mapping { upto: 0, delta: 0 },
-        Mapping { upto: 1, delta: 1 },
-        Mapping { upto: i64::MAX, delta: 0}
-    ]}, actual);
-}
-
-#[test]
-fn test_apply_parsed_mappings_parsed_crosses_range() {
-    let actual = Mappings::apply_parsed_mappings(
-        &vec![ParsedMapping{ source: 0, dest: 40, length: 20 }],
-        &Mappings { m: vec![
-            Mapping { upto: 10, delta: 1 },
-            Mapping { upto: i64::MAX, delta: 0}
-        ]}
-    );
-    assert_eq!(Mappings { m: vec![
-        Mapping { upto: 0, delta: 1 },
-        Mapping { upto: 10, delta: 41 },
-        Mapping { upto: 20, delta: 40 },
-        Mapping { upto: i64::MAX, delta: 0}
+        Mapping { from: i64::MIN, upto:        0, delta:   0 },
+        Mapping { from:        0, upto:        5, delta:  10 },
+        Mapping { from:        5, upto:       10, delta:   0 },
+        Mapping { from:       10, upto:       15, delta: -10 },
+        Mapping { from:       15, upto:       16, delta:   0 },
+        Mapping { from:       16, upto:       18, delta:   1 },
+        Mapping { from:       18, upto: i64::MAX, delta:   0 },
     ]}, actual);
 }
 
@@ -197,13 +130,12 @@ fn parse(filename: &str) -> (Vec<i64>, Vec<Mappings>) {
     let mappingses = sections.map(|s| {
         let mut lines = s.lines();
         lines.next(); // get rid of the header, it's irrelevant
-        Mappings::apply_parsed_mappings(
+        Mappings::parsed_to_mappings(
             &lines.map(|l| {
                    let nums: Vec<i64> = l.split(" ")
                        .map(|n| n.parse().unwrap()).collect();
                    ParsedMapping { source: nums[1], dest: nums[0], length: nums[2] }
-            }).collect(),
-            &Mappings::new()
+            }).collect()
         )
     }).collect();
 
