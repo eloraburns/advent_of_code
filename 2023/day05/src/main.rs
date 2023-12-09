@@ -24,6 +24,7 @@ struct Mapping {
     delta: i64,
 }
 
+#[derive(Clone)]
 #[derive(Debug)]
 #[derive(Eq)]
 #[derive(PartialEq)]
@@ -101,7 +102,7 @@ impl Mappings {
         let mut newmaps = vec![];
 
         for ma1 in m1.m.iter() {
-            let projection = Mappings::slice(m2, ma1.from, ma1.upto);
+            let projection = Mappings::slice(m2, ma1.from + ma1.delta, ma1.upto + ma1.delta);
             for ma2 in projection.iter() {
                 newmaps.push(Mapping {
                     from: ma1.from + ma2.from,
@@ -165,17 +166,17 @@ fn main() {
     println!("Test a (35): {}", solvea("testa.txt"));
     println!("Solve a (836040384): {}", solvea("input.txt"));
     println!("Test b (46): {}", solveb("testa.txt"));
-    println!("Solve b (?): {}", solveb("input.txt"));
+    println!("Solve b (10834440): {}", solveb("input.txt"));
 }
 
-fn parse(filename: &str) -> (Vec<i64>, Vec<Mappings>) {
+fn parse(filename: &str) -> (Vec<i64>, Mappings) {
     let binding = std::fs::read_to_string(filename).unwrap();
     let mut sections = binding.split("\n\n");
     let seeds: Vec<i64> = sections.next().unwrap()
         .split(": ").nth(1).unwrap()
         .split(" ").map(|n| n.parse::<i64>().unwrap())
         .collect();
-    let mappingses = sections.map(|s| {
+    let mappingses: Vec<_> = sections.map(|s| {
         let mut lines = s.lines();
         lines.next(); // get rid of the header, it's irrelevant
         Mappings::parsed_to_mappings(
@@ -187,13 +188,19 @@ fn parse(filename: &str) -> (Vec<i64>, Vec<Mappings>) {
         )
     }).collect();
 
-    (seeds, mappingses)
+    let mut miter = mappingses.iter().rev();
+    let mut onemap: Mappings = miter.next().unwrap().clone();
+    for m1 in miter {
+        onemap = Mappings::merge_mappings(m1, &onemap);
+    }
+
+    (seeds, onemap)
 }
 
 fn solvea(filename: &str) -> i64 {
-    let (seeds, mappingses) = parse(filename);
+    let (seeds, mappings) = parse(filename);
     seeds.iter().map(|&seed|
-        mappingses.iter().fold(seed, |acc, m| m.map(acc))
+        mappings.map(seed)
     ).min().unwrap()
 }
 
@@ -201,5 +208,14 @@ fn solveb(filename: &str) -> i64 {
     // Ok, so we have to figure out how to flatten the maps (merge range rewrites)
     // and then only look at the places where seed ranges start, and where they
     // intersect with discontinuities in the total mapping.
-    0
+    let mut locations: Vec<i64> = vec![];
+    let (seeds, mappings) = parse(filename);
+    for i in (0..seeds.len()).step_by(2) {
+        let (from, upto) = (seeds[i], seeds[i] + seeds[i+1]);
+        let interesting = Mappings::slice(&mappings, from, upto);
+        for m in interesting.iter() {
+            locations.push(from + m.from + m.delta);
+        }
+    }
+    *locations.iter().min().unwrap()
 }
