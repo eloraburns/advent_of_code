@@ -84,25 +84,28 @@ impl Span {
     }
 
     fn is_clean(&self, r: &Record) -> bool {
-        for i in self.offset..(self.offset + self.length) {
-            let bit = 1 << i;
-            // If its not marked as damaged, or is marked as working
-            //println!("checking bit 0b{bit:0b}");
-            //println!("bit & r.damaged_mask => {}", bit & r.damaged_mask);
-            //println!("bit & r.damaged_mask == 0 => {}", (bit & r.damaged_mask)==0);
-            //println!("bit & r.working_mask => {}", bit & r.working_mask);
-            //println!("bit & r.working_mask == bit => {}", (bit & r.working_mask) == bit);
-            if ((bit & r.damaged_mask) == 0) && ((bit & r.working_mask) == bit) {
-                //println!("FALSE");
-                // we don't fit here
-                return false;
-            }
+        if r.working_mask & (self.mask << self.offset) > 0 {
+            return false;
         }
+        //for i in self.offset..(self.offset + self.length) {
+        //    let bit = 1 << i;
+        //    // If its not marked as damaged, or is marked as working
+        //    //println!("checking bit 0b{bit:0b}");
+        //    //println!("bit & r.damaged_mask => {}", bit & r.damaged_mask);
+        //    //println!("bit & r.damaged_mask == 0 => {}", (bit & r.damaged_mask)==0);
+        //    //println!("bit & r.working_mask => {}", bit & r.working_mask);
+        //    //println!("bit & r.working_mask == bit => {}", (bit & r.working_mask) == bit);
+        //    if ((bit & r.damaged_mask) == 0) && ((bit & r.working_mask) == bit) {
+        //        //println!("FALSE");
+        //        // we don't fit here
+        //        return false;
+        //    }
+        //}
         let lastbit = 1 << (self.offset + self.length);
         //println!("checking last bit 0b{lastbit:0b}");
         // But if the spring _after_ us is not known to be damaged or is in fact
         // working, then we _are_ still in good stead.
-        lastbit & r.damaged_mask == 0 || lastbit & r.working_mask == 1
+        lastbit & r.damaged_mask == 0
     }
 }
 
