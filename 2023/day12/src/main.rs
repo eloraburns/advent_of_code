@@ -10,20 +10,23 @@ struct Record {
 
 impl Record {
     fn fivex(&self) -> Record {
+        let base_working_mask = self.working_mask >> 1;
+        let base_damaged_mask = self.damaged_mask >> 1;
         Record {
+            // Extending by 1 bit so we don't have to check for negative offsets
             working_mask:
-                self.working_mask
-                | (self.working_mask << ((self.length + 1) * 1))
-                | (self.working_mask << ((self.length + 1) * 2))
-                | (self.working_mask << ((self.length + 1) * 3))
-                | (self.working_mask << ((self.length + 1) * 4)),
+                ((base_working_mask
+                | (base_working_mask << ((self.length) * 1))
+                | (base_working_mask << ((self.length) * 2))
+                | (base_working_mask << ((self.length) * 3))
+                | (base_working_mask << ((self.length) * 4))) << 1) | 1,
             damaged_mask:
-                self.damaged_mask
-                | (self.damaged_mask << ((self.length + 1) * 1))
-                | (self.damaged_mask << ((self.length + 1) * 2))
-                | (self.damaged_mask << ((self.length + 1) * 3))
-                | (self.damaged_mask << ((self.length + 1) * 4)),
-            length: self.length * 5 + 4,
+                (base_damaged_mask
+                | (base_damaged_mask << ((self.length) * 1))
+                | (base_damaged_mask << ((self.length) * 2))
+                | (base_damaged_mask << ((self.length) * 3))
+                | (base_damaged_mask << ((self.length) * 4))) << 1,
+            length: (self.length - 1) * 5 + 4 + 1,
             pattern: self.pattern.clone()
                 .into_iter().cycle()
                 .take(self.pattern.len() * 5)
@@ -54,15 +57,30 @@ impl fmt::Debug for Record {
     }
 }
 
+#[test]
+fn test_fivex() {
+    let mut r = Record {
+        working_mask: 0b01,
+        damaged_mask: 0b10,
+        length: 2,
+        pattern: vec![1],
+    };
+    let mut r2 = r.fivex();
+    assert_eq!(r2.working_mask, 0b0000000001, "'empty' working mask extends cleanly");
+    assert_eq!(r2.damaged_mask, 0b1010101010, "damaged mask extends cleanly");
+    assert_eq!(r2.length, 10, "5 plus 4 plus 1");
+}
+
 #[derive(Debug)]
 struct Span {
     offset: usize,
     length: usize,
+    mask: u128,
 }
 
 impl Span {
     fn new(length: usize) -> Span {
-        Span { offset: 0, length }
+        Span { offset: 0, length, mask: (1 << length) - 1 }
     }
 
     fn is_clean(&self, r: &Record) -> bool {
@@ -103,8 +121,8 @@ fn test_span_is_clean() {
 }
 
 fn main() {
-    ////println!("Test a (21): {}", solvea("testa.txt"));
-    ////println!("Solve a (7716): {}", solvea("input.txt"));
+    //println!("Test a (21): {}", solvea("testa.txt"));
+    //println!("Solve a (7716): {}", solvea("input.txt"));
     //println!("Test b (525152): {}", solveb("testa.txt"));
     println!("Solve b (?): {}", solveb("input.txt"));
 }
@@ -129,9 +147,10 @@ fn parse(filename: &str) -> Vec<Record> {
         let pattern = rec2.split(",").map(|n| n.parse::<u64>().unwrap()).collect();
 
         Record {
-            working_mask,
-            damaged_mask,
-            length,
+            // Extending by 1 bit so we don't have to check for negative offsets
+            working_mask: (working_mask << 1) + 1,
+            damaged_mask: damaged_mask << 1,
+            length: length + 1,
             pattern
         }
     }).collect()
@@ -287,24 +306,26 @@ fn solvea(filename: &str) -> u64 {
     let records = parse(filename);
     records.iter().map(|r| {
         let num_combos = num_combos_b(r);
-        //println!("{num_combos} <= {r:?}");
+        println!("{num_combos} <= {r:?}");
         num_combos
     }).sum()
 }
 fn num_combos_b(r: &Record) -> u64 {
     let mut spans = vec![Span::new(0)];
     spans.extend(r.pattern.iter().map(|l| Span::new(*l as usize)));
-    println!("{r:?}");
+    spans[1].offset = 1;
+    //println!("{r:?}");
     let mut i = 1;
     let mut valid = 0;
     while i > 0 {
         //println!("i={i}, spans={spans:?}");
         // If we're RIGHT at the beginning
         if spans[i].offset == 0
+            ||
             // OR If we're not RIGHT at the beginning
-            || spans[i].offset > 0
+            // spans[i].offset > 0 && // Don't have to check this as [1].offset always starts at 1
             // AND there is no damage immediately before us
-            && (r.damaged_mask & (1 << spans[i].offset - 1)) == 0
+            (r.damaged_mask & (1 << spans[i].offset - 1)) == 0
             // and this span is still within the map we have
             && ((spans[i].offset + spans[i].length) <= r.length)
         {
@@ -342,7 +363,8 @@ fn solveb(filename: &str) -> u64 {
     // obviously we can't do the same as part A, because generating
     // all the combinations concretely won't fly. (also the bitstring representation
     // probalby won't work, THOUGH rust does have a u128 type that might be enough)
-    // 28s to do take(29) in release
+    // 28s to do take(29) in release giving a likely correct answer 150711353
+    // 28s to do take(29) in release with 1-bit-buffer! 150711353
     records.iter().take(29).map(|r| {
     //records.iter().map(|r| {
         let num_combos = num_combos_b(r);
