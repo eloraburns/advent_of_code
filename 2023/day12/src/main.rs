@@ -325,11 +325,9 @@ fn num_combos_b(r: &Record) -> u64 {
         // If we're RIGHT at the beginning
         if spans[i].offset == 0
             ||
-            // OR If we're not RIGHT at the beginning
-            // spans[i].offset > 0 && // Don't have to check this as [1].offset always starts at 1
-            // AND there is no damage immediately before us
+            // OR there is no damage immediately before us
             (r.damaged_mask & (1 << spans[i].offset - 1)) == 0
-            // and this span is still within the map we have
+            // AND this span is still within the map we have
             && ((spans[i].offset + spans[i].length) <= r.length)
         {
             // Continue checking
