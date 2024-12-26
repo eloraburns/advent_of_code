@@ -1,0 +1,21 @@
+x00 XOR y00 -> z00
+y00 AND x00 -> rhk
+
+y01 XOR x01 -> vsn
+    vsn XOR rhk -> z01
+    rhk AND vsn -> tpp
+y01 AND x01 -> hct
+    tpp OR hct -> mbr
+
+y02 XOR x02 -> pwg
+    mbr XOR pwg -> z02
+    pwg AND mbr -> jdj
+y02 AND x02 -> dhh
+    dhh OR jdj -> rsm
+
+x03 XOR y03 -> jdt
+    rsm XOR jdt -> z03
+    jdt AND rsm -> qwg
+x03 AND y03 -> bdr
+    qwg OR bdr -> ggh
+

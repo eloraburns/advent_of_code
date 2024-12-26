@@ -57,6 +57,10 @@ class Gate:
             if debug: print(f"    ==> {self.evaluate()}")
             self.wout.set(self.evaluate())
 
+    @property
+    def gid(self):
+        return f"{self.w1.name}{self.__class__.__name__}{self.w2.name}{self.wout.name}"
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.w1.name!r}, {self.w2.name!r}, {self.wout.name!r})"
 
@@ -103,10 +107,58 @@ def solvea(raw):
         if debug: print(f"{zwirename} => {acc}")
     return acc
 
-print("TEST A1 (expect 4)")
-print(solvea(test1))
-print("TEST A2 (expect 2024)")
-print(solvea(test2))
-print("SOLVE A")
-print(solvea(input_txt))
+def to_mermaid(network):
+    wires = network.keys()
+    ins = [
+        w
+        for pair in zip(
+            sorted([x for x in wires if x.startswith('x')]),
+            sorted([y for y in wires if y.startswith('y')])
+        )
+        for w in pair
+    ]
+    seen_wires = set()
+    seen_gates = set()
+    out = []
+    out.append("flowchart LR")
+    for i in ins:
+        out.append(f"    {i}>{i}]")
+        seen_wires.add(i)
+    for w in network.values():
+        if w.name not in seen_wires:
+            out.append(f"    {w.name}>{w.name}]")
+            seen_wires.add(w.name)
+        for g in w.connected_to:
+            if g.gid not in seen_gates:
+                out.append(f"    {g.gid}[/{g.__class__.__name__}\\]")
+                seen_gates.add(g.gid)
+            out.append(f"    {w.name} --> {g.gid}")
+            if g.wout.name not in seen_wires:
+                out.append(f"    {g.wout.name}>{g.wout.name}]")
+                out.append(f"    {g.gid} --> {g.wout.name}")
+                seen_wires.add(g.wout.name)
 
+        # if g.w1.name not in seen:
+        #     out.append(f"    {g.w1.name}>{g.w1.name}]")
+        #     seen_wires.add(g.w1.name)
+        # if g.w2.name not in seen:
+        #     out.append(f"    {g.w2.name}>{g.w2.name}]")
+        #     seen_wires.add(g.w2.name)
+        # if g.wout.name not in seen:
+        #     out.append(f"    {g.wout.name}>{g.wout.name}]")
+        #     seen_wires.add(g.wout.name)
+        # out.append(f"    {gid}[/{g.__class__.__name__}\\]")
+        # out.append(f"    {g.w1.name} --> {gid}")
+        # out.append(f"    {g.w2.name} --> {gid}")
+        # out.append(f"    {gid} --> {g.wout.name}")
+    return "\n".join(out)
+
+if __name__ == "__main__":
+    print("TEST A1 (expect 4)")
+    print(solvea(test1))
+    print("TEST A2 (expect 2024)")
+    print(solvea(test2))
+    print("SOLVE A")
+    print(solvea(input_txt))
+
+    print(to_mermaid(make_network(parse(test2)[1])))
