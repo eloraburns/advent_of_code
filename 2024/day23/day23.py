@@ -1,4 +1,5 @@
 from itertools import combinations
+from pprint import pprint
 
 with open("testa.txt") as f:
     testa = [
@@ -24,7 +25,7 @@ class Comp:
         conns = ",".join((c.name for c in self.connections))
         return f"Comp({self.name!r}, <{conns}>)"
 
-def solvea(connections):
+def connect_comps(connections):
     comps = {}
     for (ca, cb) in connections:
         if ca not in comps:
@@ -33,6 +34,10 @@ def solvea(connections):
             comps[cb] = Comp(cb)
         comps[ca].connect_to(comps[cb])
         comps[cb].connect_to(comps[ca])
+    return comps
+
+def solvea(connections):
+    comps = connect_comps(connections)
     seen_3nets = set()
     for comp in comps.values():
         #print(f" Checking {comp=}")
@@ -51,9 +56,42 @@ def solvea(connections):
             tgroups += 1
     return tgroups
 
+def bron_kerbosch_1(p):
+    return _bron_kerbosch_1(frozenset(), frozenset(p), frozenset())
+
+def _bron_kerbosch_1(r, p, x):
+    if not p and not x:
+        return [r]
+    cliques = []
+    runningp = p
+    runningx = x
+    for v in p:
+        r1 = r.union([v])
+        p1 = runningp.intersection(v.connections)
+        x1 = x.intersection(v.connections)
+        cliques.extend(_bron_kerbosch_1(r1, p1, x1))
+        runningp = runningp.difference([v])
+        runningx = runningx.union([v])
+    return cliques
+
+def solveb(connections):
+    comps = connect_comps(connections)
+    cliques = bron_kerbosch_1(comps.values())
+    maxclique = max(cliques, key=len)
+    members = sorted(set([
+        comp.name
+        for comp in maxclique
+    ]))
+    return ",".join(members)
+
+print()
 print("TEST A (expect 7)")
 print(solvea(testa))
-
 print("SOLVE A")
 print(solvea(input_txt))
+print()
+print("TEST B (expect 'co,de,ka,ta')")
+print(solveb(testa))
+print("SOLVE B")
+print(solveb(input_txt))
 
