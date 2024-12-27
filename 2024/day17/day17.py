@@ -250,6 +250,8 @@ for i in range(0, len(p), 2):
 
 xors = [
     # ( opcode, xor_value, shift )
+    #(0b000, 0b101, 1),
+    #(0b001, 0b100, 0),
     (0b010, 0b111, 3),
     #(0b011, 0b110, 2),
     (0b100, 0b001, 5),
@@ -267,6 +269,7 @@ for output_value in range(8):
 # These are special-cased as the "opcode" and stuff that gets xor'd overlaps.
 # And there are only 6 of them.
 ops_map[1].append((0b1000 , 0b1111  ))
+ops_map[5].append((0b0000 , 0b1111  ))
 ops_map[5].append((0b001  , 0b111   ))
 ops_map[0].append((0b11011, 0b11111 ))
 ops_map[2].append((0b10011, 0b11111 ))
@@ -276,11 +279,13 @@ for k, v in ops_map.items():
     ops_map[k] = sorted(v)
 print(ops_map)
 
+prog = parsea(input_txt)["p"]
+
 def test_ops_map():
     for out_val in ops_map.keys():
         for (value, mask) in ops_map[out_val]:
             op = value & 0b111
-            actual = run({"a": value, "b": 0, "c": 0, "p": [2,4,1,1,7,5,4,6,1,4,0,3,5,5,3,0]})["out"]
+            actual = run({"a": value, "b": 0, "c": 0, "p": prog})["out"]
             if actual and actual[0] == out_val:
                 print(f"PASS: {out_val=} op=0b{op:03b} a={value:b}")
             else:
@@ -291,16 +296,15 @@ test_ops_map()
 def find_smallest_a(digits=1, a_so_far=0):
     pad = '.'*digits
     print(f"{pad} find_smallest_a({digits=}, {a_so_far=}")
-    p = [2,4,1,1,7,5,4,6,1,4,0,3,5,5,3,0]
-    if digits == len(p): return a_so_far
+    if digits > len(prog): return a_so_far
     a_so_far <<= 3
-    expected_out = p[-digits:]
+    expected_out = prog[-digits:]
     print(f"{pad}   {expected_out=}")
     for (new_a_op, a_mask) in ops_map[expected_out[0]]:
         print(f"{pad}   Trying {new_a_op=}")
         if ((a_so_far & a_mask) ^ new_a_op) >> 3 == 0:
             potential_a = a_so_far | new_a_op
-            out = run({"a": potential_a, "b": 0, "c": 0, "p": p})["out"]
+            out = run({"a": potential_a, "b": 0, "c": 0, "p": prog})["out"]
             print(f"{pad} * a={potential_a} {out=}")
             if out == expected_out:
                 if find_smallest_a(digits + 1, potential_a) is not None:
@@ -310,6 +314,39 @@ def find_smallest_a(digits=1, a_so_far=0):
 
 print("smallest a?")
 print(find_smallest_a())
+
+#............... * a=25295828419909 out=[4, 1, 1, 7, 5, 4, 6, 1, 4, 0, 3, 5, 5, 3, 0]
+#................ find_smallest_a(digits=16, a_so_far=25295828419909
+#5
+
+print("run machine with a=25295828419909")
+print(run({"a": 25295828419909, "b": 0, "c": 0, "p": prog}))
+# 25295828419909 is too low (yes, it didn't output the leading 2)
+print("run machine with a=25295828419909, expect:")
+print(prog)
+print(run({"a": 202366627359279, "b": 0, "c": 0, "p": prog})["out"])
+# 202366627359279 is too high
+
+# 202366627359274
+def find_all_a(p, a_so_far=0, mask_so_far=0, shift=0):
+    if not p:
+        return [a_so_far]
+    solutions = []
+    for (new_a_op, a_mask) in ops_map[p[0]]:
+        mask_intersect = (a_mask << shift) & mask_so_far
+        ops_xor = (new_a_op << shift) ^ a_so_far
+        if mask_intersect & ops_xor == 0:
+            solutions.extend(find_all_a(
+                p[1:],
+                (new_a_op << shift) | a_so_far,
+                (a_mask << shift) | mask_so_far,
+                shift + 3
+            ))
+    return solutions
+
+all_a = find_all_a(p)
+print(f"{len(all_a)=}")
+print(f"{min(all_a)=}")
 
 # a & 0b000000111 -> b
 # b ^ 0b001       -> b
