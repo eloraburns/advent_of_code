@@ -1,3 +1,4 @@
+from fractions import Fraction
 import re
 import time
 
@@ -61,6 +62,7 @@ def parse_b(raw):
     for rawgame in raw.strip().split("\n\n"):
         game = ClawGame(rawgame)
         game.prize = game.prize + Pair(10000000000000, 10000000000000)
+        #                              10000000000000  10000000000000
         games.append(game)
     return games
 
@@ -75,11 +77,11 @@ def lcm(a, b):
     return a * b // gcd(a, b)
 
 def solve_a_game(game):
-    print(game)
+    #print(game)
     a_count = 0
     b_count = game.prize // game.b
     agg_lcm = lcm(lcm(game.a.x, game.b.x), lcm(game.a.y, game.b.y))
-    print(f"{agg_lcm=}")
+    #print(f"{agg_lcm=}")
     for x in range(agg_lcm):
         if b_count < 0:
             break
@@ -106,15 +108,48 @@ print("TEST EXPECTS 480")
 print(f"TEST RETURNS {part_a(parse(testa_txt))}")
 print(f"ACTUAL RETURNS {part_a(parse(input_txt))}")
 
-bgames = parse_b(testa_txt)
-print("DEBUGGING")
-print(f"\nRunning the first game {bgames[0]}")
-print(f"Solving returns {part_a(bgames[:1])}")
-print(f"\nRunning the second game {bgames[1]}")
-print(f"Solving returns {part_a(bgames[1:2])}")
+#bgames = parse_b(testa_txt)
+#print("DEBUGGING")
+#print(f"\nRunning the first game {bgames[0]}")
+#print(f"Solving returns {part_a(bgames[:1])}")
+#print(f"\nRunning the second game {bgames[1]}")
+#print(f"Solving returns {part_a(bgames[1:2])}")
 
 
 #print("PART B")
 #print("TEST EXPECTS ???")
 #print(f"TEST RETURNS {part_a(bgames)}")
 #print(f"ACTUAL RETURNS {part_a(parse_b(input_txt))}")
+
+def solve_one_b(game):
+    xa = game.a.x
+    ya = game.a.y
+    xb = game.b.x
+    yb = game.b.y
+    xt = game.prize.x
+    yt = game.prize.y
+
+    alpha = Fraction(
+        xt - Fraction(xb * yt, yb),
+        xa - Fraction(ya * xb, yb)
+    )
+    beta = Fraction(xt - alpha * xa, xb)
+    if alpha.is_integer() and beta.is_integer():
+        return int(alpha*3 + beta)
+    else:
+        return 0
+
+def solve_b(raw):
+    games = parse_b(raw)
+    return sum(solve_one_b(game) for game in games)
+
+testa_b = parse_b(testa_txt)
+
+print("TEST B")
+print(f"EXPECT =0: {solve_one_b(testa_b[0])}")
+print(f"EXPECT >0: {solve_one_b(testa_b[1])}")
+print(f"EXPECT =0: {solve_one_b(testa_b[2])}")
+print(f"EXPECT >0: {solve_one_b(testa_b[3])}")
+print("RUN B")
+print(solve_b(input_txt))
+# 83 102 355 665 474
