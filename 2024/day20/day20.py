@@ -122,3 +122,35 @@ print(solve1(testa, progress=True, debug=True))
 
 print("SOLVE 1")
 print(solve1(input_txt, progress=True))
+
+def solve2(raw, progress=False, debug=False):
+    (all_nodes, start, end) = parse(raw)
+    dijkstra(all_nodes, start, end, progress=progress)
+    if progress: print(f"Fastest route takes {end.best_cost}ps")
+    base_case = end.best_cost
+    base_route = [end]
+    current_node = end
+    while current_node is not start:
+        base_route.append(current_node := current_node.best_cost_from)
+    base_route.reverse()
+    if debug: print(f"Best base route: {base_route}")
+    one_hundred_ps_club = 0
+    for loc in base_route:
+        (x, y) = (loc.x, loc.y)
+        for dx in range(-20, 21):
+            remrange = 20 - abs(dx)
+            for dy in range(-remrange, remrange+1):
+                if nloc := all_nodes.get((x + dx, y + dy)):
+                    savings = nloc.best_cost - loc.best_cost - abs(dx) - abs(dy)
+                    if debug and savings > 0: print(f"  Found {savings=}ps")
+                    if savings >= 100:
+                        one_hundred_ps_club += 1
+
+    return one_hundred_ps_club
+
+print("TEST 1A")
+print(solve2(testa, progress=True, debug=True))
+
+print("SOLVE 1")
+print(solve2(input_txt, progress=True))
+
